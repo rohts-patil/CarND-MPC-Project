@@ -3,6 +3,48 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+## Model
+
+I have implemented a kinematic model to control the vehicle around the track.At low and moderate speeds, kinematic models often approximate the actual vehicle dynamics.Here I am able to achieve the speed of 70 MPH.
+
+The model will optimize the actuators input to simulate the vehicle trajectory and minimize the cost functions like cross-track error, etc.
+
+### State
+
+The state vector is [x, y, ψ, ν, δ, a], where
+- x: cars x global position
+- y: cars y global position
+- ψ (psi): vehicle's angle in radians from the x-direction (radians)
+- ν : vehicle's velocity
+- δ (delta): steering angle
+- a : acceleration (throttle)
+
+### Actuators
+
+- δ (delta): steering angle
+- a : acceleration (throttle)
+
+These are also included in the state vector.
+
+### Update equations
+
+![kinematic model equations](https://github.com/rohts-patil/CarND-MPC-Project/blob/master/src/eqn.png)
+
+## Parameter tuning
+
+N and dt:
+
+N is number of timesteps and dt is the time gap between each state.T=N*dt
+Choosing largre T might cause bad fitting and so I choose T=1s here.
+To compensate the latency, I chose dt > latency. The choice of dt is also determined by the speed you choose.
+By experimenting I determined the value N and dt to be 10 and 0.1.
+
+
+## Latency
+
+Compensation for the latency is done by optimizing the cost function and averaging the first two actuator values of the solution. 
+Also I choose large dt to compensate the latency.
+
 ## Dependencies
 
 * cmake >= 3.5
@@ -43,7 +85,6 @@ Self-Driving Car Engineer Nanodegree Program
 
 
 ## Basic Build Instructions
-
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
