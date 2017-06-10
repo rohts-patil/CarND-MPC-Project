@@ -91,15 +91,55 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+          double delta = j[1]["steering_angle"];
+          double acceleration = j[1]["throttle"];
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+		  
+		  
+		   //convert map system to car system
+          vector<double> next_x_vals;
+          vector<double> next_y_vals;
+          
+          for (int i=0; i<ptsx.size(); i++) {
+            
+            double x_diff = ptsx[i] - px;
+            double y_diff = ptsy[i] - py;
+            ptsx[i] = x_diff * cos(psi) + y_diff * sin(psi);
+            ptsy[i] = y_diff * cos(psi) - x_diff * sin(psi);
+
+            next_x_vals.push_back(ptsx[i]);
+            next_y_vals.push_back(ptsy[i]);
+          }
+		  
+		  
+		  Eigen::VectorXd ptsx_(ptsx.size());
+          Eigen::VectorXd ptsy_(ptsy.size());
+
+          for (int i =0; i<ptsx.size(); i++) {
+            ptsx_(i) = ptsx[i];
+            ptsy_(i) = ptsy[i];
+          }
+
+          auto coeffs = polyfit(ptsx_, ptsy_, 3);
+
+          double cte = polyeval(coeffs, 0.0); 
+          double epsi = -atan(coeffs[1]);     
+
+          Eigen::VectorXd state(6);
+          state << 0.0, 0.0, 0.0, v, cte, epsi;
+
+
+          auto vars = mpc.Solve(state, coeffs);
+		  
+		  
+		  
+          double steer_value= (-1*vars[0] / deg2rad(25));
+          double throttle_value= vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -124,9 +164,20 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
+		  auto N = (vars.size() - 2)/ 2;
+
+          for (int i=2; i < N+2; i++) {
+            double temp_x = vars[i];
+            double temp_y = vars[i+N];
+            mpc_x_vals.push_back(temp_x);
+            mpc_y_vals.push_back(temp_y);
+          }
+		  
+		  
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
-
+		  msgJson["next_x"] = next_x_vals;
+          msgJson["next_y"] = next_y_vals;
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
